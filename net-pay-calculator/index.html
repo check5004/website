@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>給与・残業手取りシミュレーター</title>
+  <!-- Tailwind CSS (デザイン用) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons (アイコン用) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 p-4 md:p-8 font-sans min-h-screen">
+  <div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- ヘッダー -->
+    <header class="flex items-center gap-3 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+      <div class="bg-blue-600 p-3 rounded-xl text-white">
+        <i data-lucide="calculator" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900">給与・残業手取りシミュレーター</h1>
+        <p class="text-sm text-gray-500">労働条件通知書・給与明細に基づく予測計算</p>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- 左カラム：操作パネル -->
+      <div class="lg:col-span-4 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+          <h2 class="text-lg font-bold border-b pb-2 flex items-center gap-2">
+            <i data-lucide="clock" class="w-[18px] h-[18px] text-blue-600"></i>
+            労働時間の入力
+          </h2>
+          
+          <!-- 通常残業スライダー -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <label class="text-sm font-semibold text-gray-700">通常残業時間</label>
+              <span id="overtime-val" class="text-lg font-bold text-blue-600">0 h</span>
+            </div>
+            <input 
+              type="range" id="overtime-input"
+              min="0" max="80" step="1" value="0" 
+              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+          </div>
+
+          <!-- 深夜残業スライダー -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <label class="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                <i data-lucide="moon" class="w-3.5 h-3.5"></i> 深夜残業時間
+              </label>
+              <span id="night-overtime-val" class="text-lg font-bold text-indigo-600">0 h</span>
+            </div>
+            <input 
+              type="range" id="night-overtime-input"
+              min="0" max="40" step="1" value="0" 
+              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            />
+            <p class="text-xs text-gray-500">※22時以降の残業。上記に加えて割増(+50%)されます。</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+          <h2 class="text-lg font-bold border-b pb-2">特殊パターンの追加</h2>
+          
+          <!-- 定期代トグル -->
+          <label class="flex items-center justify-between cursor-pointer group">
+            <div class="flex items-center gap-3">
+              <div id="pass-icon-bg" class="p-2 rounded-lg bg-gray-100 text-gray-500 transition-colors">
+                <i data-lucide="train" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-sm">定期代の支給月 (2月/8月)</div>
+                <div class="text-xs text-gray-500">+167,900円 (非課税)</div>
+              </div>
+            </div>
+            <div class="relative">
+              <input type="checkbox" id="pass-checkbox" class="sr-only">
+              <div id="pass-bg" class="block w-14 h-8 rounded-full transition-colors bg-gray-300"></div>
+              <div id="pass-dot" class="absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform"></div>
+            </div>
+          </label>
+
+          <!-- ボーナストグル -->
+          <label class="flex items-center justify-between cursor-pointer group">
+            <div class="flex items-center gap-3">
+              <div id="bonus-icon-bg" class="p-2 rounded-lg bg-gray-100 text-gray-500 transition-colors">
+                <i data-lucide="gift" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-sm">ボーナス支給月 (6月/12月)</div>
+                <div class="text-xs text-gray-500">基本給の1.5ヶ月分(予定)</div>
+              </div>
+            </div>
+            <div class="relative">
+              <input type="checkbox" id="bonus-checkbox" class="sr-only">
+              <div id="bonus-bg" class="block w-14 h-8 rounded-full transition-colors bg-gray-300"></div>
+              <div id="bonus-dot" class="absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 右カラム：計算結果 -->
+      <div class="lg:col-span-8 space-y-6">
+        
+        <!-- メイン手取り表示 -->
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div class="relative z-10">
+            <h2 class="text-blue-100 font-medium mb-1">今月の予測手取り額（給与のみ）</h2>
+            <div class="flex items-baseline gap-2">
+              <span id="current-net-pay" class="text-4xl md:text-5xl font-extrabold tracking-tight"></span>
+            </div>
+            
+            <div class="mt-6 flex flex-wrap gap-4 text-sm bg-white/10 p-3 rounded-xl backdrop-blur-sm border border-white/20">
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-green-300"></i>
+                <span>残業代による増加: <strong id="ot-increase"></strong></span>
+              </div>
+              <div class="w-px h-5 bg-white/30 hidden md:block"></div>
+              <div class="flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-red-300"></i>
+                <span>税・保険の増加: <strong id="tax-increase"></strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="absolute -right-10 -bottom-10 opacity-10">
+            <i data-lucide="calculator" class="w-48 h-48"></i>
+          </div>
+        </div>
+
+        <!-- 比較テーブル -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+            <h3 class="font-bold text-gray-800">給与内訳の比較</h3>
+            <span class="text-xs font-medium px-2 py-1 bg-gray-200 text-gray-700 rounded-md">残業0との比較</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left whitespace-nowrap">
+              <thead class="bg-gray-50/50 text-gray-500 border-b">
+                <tr>
+                  <th class="p-4 font-medium w-1/3">項目</th>
+                  <th class="p-4 font-medium">【基準】残業0H</th>
+                  <th class="p-4 font-medium text-blue-700">【今月】予測値</th>
+                  <th class="p-4 font-medium text-right">差額</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <!-- 支給 -->
+                <tr class="hover:bg-gray-50">
+                  <td class="p-4 text-gray-600">基本給</td>
+                  <td class="p-4 base-gross"></td>
+                  <td class="p-4 font-medium base-gross"></td>
+                  <td class="p-4 text-right text-gray-400">-</td>
+                </tr>
+                <tr class="hover:bg-gray-50 bg-blue-50/30">
+                  <td class="p-4 text-gray-600 flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> 残業手当</td>
+                  <td class="p-4">0 円</td>
+                  <td class="p-4 font-bold text-blue-600" id="current-ot"></td>
+                  <td class="p-4 text-right text-green-600 font-medium" id="diff-ot"></td>
+                </tr>
+                <tr id="pass-row" class="hover:bg-gray-50 bg-green-50/30 hidden">
+                  <td class="p-4 text-gray-600 flex items-center gap-1"><i data-lucide="train" class="w-3.5 h-3.5"></i> 通勤定期代</td>
+                  <td class="p-4">0 円</td>
+                  <td class="p-4 font-bold text-green-700" id="current-pass"></td>
+                  <td class="p-4 text-right text-green-600 font-medium" id="diff-pass"></td>
+                </tr>
+                <tr class="bg-gray-50 font-bold border-y-2 border-gray-200">
+                  <td class="p-4">総支給額 (A)</td>
+                  <td class="p-4 base-gross"></td>
+                  <td class="p-4 text-gray-900" id="current-gross"></td>
+                  <td class="p-4 text-right text-green-600" id="diff-gross"></td>
+                </tr>
+                
+                <!-- 控除 -->
+                <tr class="hover:bg-gray-50">
+                  <td class="p-4 text-gray-600">社会保険料 (健保・厚年・雇用)</td>
+                  <td class="p-4 base-social"></td>
+                  <td class="p-4" id="current-social"></td>
+                  <td class="p-4 text-right text-red-500" id="diff-social"></td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="p-4 text-gray-600">所得税 (推計)</td>
+                  <td class="p-4 base-tax"></td>
+                  <td class="p-4" id="current-tax"></td>
+                  <td class="p-4 text-right text-red-500" id="diff-tax"></td>
+                </tr>
+                <tr class="bg-gray-50 font-bold border-y-2 border-gray-200">
+                  <td class="p-4">控除合計 (B)</td>
+                  <td class="p-4 text-red-600 base-deduction"></td>
+                  <td class="p-4 text-red-600" id="current-deduction"></td>
+                  <td class="p-4 text-right text-red-600" id="diff-deduction"></td>
+                </tr>
+
+                <!-- 手取り -->
+                <tr class="bg-blue-50/50 font-extrabold text-lg">
+                  <td class="p-4 text-gray-800">差引支給額 (手取り: A - B)</td>
+                  <td class="p-4 base-net"></td>
+                  <td class="p-4 text-blue-700" id="current-net"></td>
+                  <td class="p-4 text-right text-blue-600" id="diff-net"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ボーナス枠 (トグルON時のみ表示) -->
+        <div id="bonus-section" class="hidden bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl p-6 shadow-sm border border-orange-200">
+          <div class="flex items-center gap-2 mb-4">
+            <i data-lucide="gift" class="w-5 h-5 text-orange-500"></i>
+            <h3 class="font-bold text-orange-800 text-lg">特別支給：ボーナス（賞与）予測</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-orange-100">
+              <div class="text-sm text-gray-500 mb-1">総支給額 (1.5ヶ月分)</div>
+              <div class="text-xl font-bold text-gray-800" id="bonus-gross"></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-orange-100">
+              <div class="text-sm text-gray-500 mb-1">控除予測 (税金・保険料)</div>
+              <div class="text-xl font-bold text-red-600" id="bonus-deduction"></div>
+            </div>
+            <div class="bg-orange-500 p-4 rounded-xl shadow-sm text-white">
+              <div class="text-sm text-orange-100 mb-1">ボーナス手取り額</div>
+              <div class="text-2xl font-bold" id="bonus-net"></div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-orange-200 flex justify-between items-center">
+            <div class="text-sm font-bold text-orange-800">
+              この月の【給与＋ボーナス】総合計手取り
+            </div>
+            <div class="text-2xl font-black text-orange-600 flex items-center gap-2">
+              <i data-lucide="arrow-right" class="w-5 h-5"></i>
+              <span id="total-net"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 注記 -->
+        <div class="bg-gray-100 rounded-xl p-4 text-xs text-gray-500 flex gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-gray-400"></i>
+          <p>
+            ※この計算結果は「労働条件通知書」および「直近の給与明細」の数値を基にしたシミュレーションであり、実際の支給額と数円〜数百円の誤差が生じる場合があります。<br/>
+            ※雇用保険料は総支給額（定期代含む）に対して0.6%で概算しています。<br/>
+            ※所得税は課税対象額に対し、前月明細の実績に基づく概算税率（約2.5%）、ボーナス時は約4%で簡易計算しています。2年目以降は住民税が加算されるため、手取りが下がります。
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // アイコンの初期化
+    lucide.createIcons();
+
+    // --- 状態管理 ---
+    const state = {
+      overtime: 0,
+      nightOvertime: 0,
+      hasCommuterPass: false,
+      hasBonus: false
+    };
+
+    // --- 定数（労働条件通知書・給与明細より） ---
+    const BASE_SALARY = 300000;
+    const HOURLY_WAGE = Math.floor(BASE_SALARY / 160); // 約1875円
+    const NORMAL_OVERTIME_RATE = 1.25;
+    const NIGHT_OVERTIME_RATE = 1.50;
+    const COMMUTER_PASS = 167900;
+    const BONUS_MULTIPLIER = 1.5;
+
+    // 固定控除（標準報酬月額32万円に基づく）
+    const HEALTH_INSURANCE = 14400;
+    const PENSION = 29280;
+
+    // 数値フォーマット関数
+    const formatYen = (num) => new Intl.NumberFormat('ja-JP').format(num) + ' 円';
+
+    // --- 計算ロジック ---
+    function calculateSalary(otHours, nightOtHours, includePass) {
+      const normalOtPay = Math.floor(HOURLY_WAGE * NORMAL_OVERTIME_RATE * otHours);
+      const nightOtPay = Math.floor(HOURLY_WAGE * NIGHT_OVERTIME_RATE * nightOtHours);
+      const otTotal = normalOtPay + nightOtPay;
+      const passPay = includePass ? COMMUTER_PASS : 0;
+      const grossTotal = BASE_SALARY + otTotal + passPay;
+
+      const employmentInsurance = Math.floor(grossTotal * 0.006);
+      const socialInsuranceTotal = HEALTH_INSURANCE + PENSION + employmentInsurance;
+      
+      const taxableIncome = grossTotal - passPay - socialInsuranceTotal;
+      const incomeTax = Math.floor(taxableIncome * 0.025);
+      
+      const deductionTotal = socialInsuranceTotal + incomeTax;
+      const netPay = grossTotal - deductionTotal;
+
+      return { otTotal, passPay, grossTotal, socialInsuranceTotal, incomeTax, deductionTotal, netPay };
+    }
+
+    function calculateBonus() {
+      if (!state.hasBonus) return null;
+      const grossBonus = BASE_SALARY * BONUS_MULTIPLIER;
+      const bHealth = Math.floor(grossBonus * 0.045);
+      const bPension = Math.floor(grossBonus * 0.0915);
+      const bEmployment = Math.floor(grossBonus * 0.006);
+      const bSocialTotal = bHealth + bPension + bEmployment;
+      const bTaxable = grossBonus - bSocialTotal;
+      const bTax = Math.floor(bTaxable * 0.04);
+      const bDeductionTotal = bSocialTotal + bTax;
+      const bNetPay = grossBonus - bDeductionTotal;
+
+      return { grossBonus, bDeductionTotal, bNetPay };
+    }
+
+    // --- 画面更新ロジック ---
+    function updateDOM() {
+      const base = calculateSalary(0, 0, false);
+      const current = calculateSalary(state.overtime, state.nightOvertime, state.hasCommuterPass);
+      const bonus = calculateBonus();
+
+      // メイン表示
+      document.getElementById('current-net-pay').textContent = formatYen(current.netPay);
+      document.getElementById('ot-increase').textContent = '+' + formatYen(current.otTotal);
+      document.getElementById('tax-increase').textContent = '+' + formatYen(current.deductionTotal - base.deductionTotal);
+
+      // 基準額（残業0H）のセット
+      document.querySelectorAll('.base-gross').forEach(el => el.textContent = formatYen(base.grossTotal));
+      document.querySelectorAll('.base-social').forEach(el => el.textContent = formatYen(base.socialInsuranceTotal));
+      document.querySelectorAll('.base-tax').forEach(el => el.textContent = formatYen(base.incomeTax));
+      document.querySelectorAll('.base-deduction').forEach(el => el.textContent = formatYen(base.deductionTotal));
+      document.querySelectorAll('.base-net').forEach(el => el.textContent = formatYen(base.netPay));
+
+      // 予測値のセット
+      document.getElementById('current-gross').textContent = formatYen(current.grossTotal);
+      document.getElementById('diff-gross').textContent = '+' + formatYen(current.grossTotal - base.grossTotal);
+      
+      document.getElementById('current-ot').textContent = formatYen(current.otTotal);
+      document.getElementById('diff-ot').textContent = '+' + formatYen(current.otTotal);
+
+      if (state.hasCommuterPass) {
+        document.getElementById('pass-row').classList.remove('hidden');
+        document.getElementById('current-pass').textContent = formatYen(current.passPay);
+        document.getElementById('diff-pass').textContent = '+' + formatYen(current.passPay);
+      } else {
+        document.getElementById('pass-row').classList.add('hidden');
+      }
+
+      document.getElementById('current-social').textContent = formatYen(current.socialInsuranceTotal);
+      document.getElementById('diff-social').textContent = '+' + formatYen(current.socialInsuranceTotal - base.socialInsuranceTotal);
+
+      document.getElementById('current-tax').textContent = formatYen(current.incomeTax);
+      document.getElementById('diff-tax').textContent = '+' + formatYen(current.incomeTax - base.incomeTax);
+
+      document.getElementById('current-deduction').textContent = formatYen(current.deductionTotal);
+      document.getElementById('diff-deduction').textContent = '+' + formatYen(current.deductionTotal - base.deductionTotal);
+
+      document.getElementById('current-net').textContent = formatYen(current.netPay);
+      document.getElementById('diff-net').textContent = '+' + formatYen(current.netPay - base.netPay);
+
+      // ボーナス枠の表示切替
+      const bonusSection = document.getElementById('bonus-section');
+      if (state.hasBonus && bonus) {
+        bonusSection.classList.remove('hidden');
+        document.getElementById('bonus-gross').textContent = formatYen(bonus.grossBonus);
+        document.getElementById('bonus-deduction').textContent = '-' + formatYen(bonus.bDeductionTotal);
+        document.getElementById('bonus-net').textContent = formatYen(bonus.bNetPay);
+        document.getElementById('total-net').textContent = formatYen(current.netPay + bonus.bNetPay);
+      } else {
+        bonusSection.classList.add('hidden');
+      }
+    }
+
+    // --- イベントリスナー ---
+    document.getElementById('overtime-input').addEventListener('input', (e) => {
+      state.overtime = Number(e.target.value);
+      document.getElementById('overtime-val').textContent = state.overtime + ' h';
+      updateDOM();
+    });
+
+    document.getElementById('night-overtime-input').addEventListener('input', (e) => {
+      state.nightOvertime = Number(e.target.value);
+      document.getElementById('night-overtime-val').textContent = state.nightOvertime + ' h';
+      updateDOM();
+    });
+
+    document.getElementById('pass-checkbox').addEventListener('change', (e) => {
+      state.hasCommuterPass = e.target.checked;
+      const bg = document.getElementById('pass-bg');
+      const dot = document.getElementById('pass-dot');
+      const iconBg = document.getElementById('pass-icon-bg');
+      
+      if(state.hasCommuterPass) {
+        bg.classList.replace('bg-gray-300', 'bg-green-500');
+        dot.classList.add('transform', 'translate-x-6');
+        iconBg.classList.replace('bg-gray-100', 'bg-green-100');
+        iconBg.classList.replace('text-gray-500', 'text-green-700');
+      } else {
+        bg.classList.replace('bg-green-500', 'bg-gray-300');
+        dot.classList.remove('transform', 'translate-x-6');
+        iconBg.classList.replace('bg-green-100', 'bg-gray-100');
+        iconBg.classList.replace('text-green-700', 'text-gray-500');
+      }
+      updateDOM();
+    });
+
+    document.getElementById('bonus-checkbox').addEventListener('change', (e) => {
+      state.hasBonus = e.target.checked;
+      const bg = document.getElementById('bonus-bg');
+      const dot = document.getElementById('bonus-dot');
+      const iconBg = document.getElementById('bonus-icon-bg');
+      
+      if(state.hasBonus) {
+        bg.classList.replace('bg-gray-300', 'bg-orange-500');
+        dot.classList.add('transform', 'translate-x-6');
+        iconBg.classList.replace('bg-gray-100', 'bg-orange-100');
+        iconBg.classList.replace('text-gray-500', 'text-orange-700');
+      } else {
+        bg.classList.replace('bg-orange-500', 'bg-gray-300');
+        dot.classList.remove('transform', 'translate-x-6');
+        iconBg.classList.replace('bg-orange-100', 'bg-gray-100');
+        iconBg.classList.replace('text-orange-700', 'text-gray-500');
+      }
+      updateDOM();
+    });
+
+    // 初期描画
+    updateDOM();
+  </script>
+</body>
+</html>
