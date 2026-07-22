@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マジカルミライ 総合ポータル</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        miku: {
+                            500: '#00a39e',
+                            600: '#008581',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 画面全体のスクロールは禁止し、中のiframe内でスクロールさせる */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 flex flex-col h-screen text-slate-800 font-sans">
+
+    <!-- ポータル用 スリムヘッダー（アプリのフレーム部分） -->
+    <header class="bg-slate-900 text-white h-12 flex items-center justify-between px-3 shadow-md z-40 shrink-0 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleMenu()" class="p-1.5 rounded-lg hover:bg-slate-800 transition active:scale-95" aria-label="メニューを開く">
+                <!-- ハンバーガーアイコン -->
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <span class="text-sm font-bold tracking-wider flex items-center gap-2">
+                <span class="text-miku-500">✨</span> MAGICAL MIRAI PORTAL
+            </span>
+        </div>
+    </header>
+
+    <!-- サイドメニュー (ドロワー) -->
+    <div id="drawerOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity duration-300"></div>
+    <aside id="drawerMenu" class="fixed top-0 left-0 bottom-0 w-64 bg-slate-800 z-50 shadow-2xl transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- ドロワーヘッダー -->
+        <div class="h-12 flex items-center justify-between px-4 border-b border-slate-700 bg-slate-900 text-white">
+            <span class="font-bold text-sm tracking-widest text-miku-500">MENU</span>
+            <button onclick="toggleMenu()" class="p-1 rounded-lg hover:bg-slate-700 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- ナビゲーションメニュー -->
+        <nav class="p-3 space-y-2 flex-1 overflow-y-auto text-sm">
+            
+            <!-- 既存の駐車場ファイルをiframeで呼び出し -->
+            <a href="#" onclick="switchPage('magical_mirai_2026_hamamatsu_parking_navi.html', this); return false;" class="nav-item flex items-center gap-3 px-3 py-3 rounded-lg bg-miku-600/20 text-miku-500 font-bold border border-miku-500/30 transition">
+                <span>🚗</span> 2026 浜松 駐車場ナビ
+            </a>
+
+            <!-- 今後拡張予定のメニュー項目（ダミー） -->
+            <a href="#" onclick="alert('今後HTMLファイルが追加されたら、ここにリンクを張ります！'); return false;" class="nav-item flex items-center justify-between px-3 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition">
+                <span class="flex items-center gap-3">🗺️ 会場周辺ガイド</span>
+            </a>
+            <a href="#" onclick="alert('今後HTMLファイルが追加されたら、ここにリンクを張ります！'); return false;" class="nav-item flex items-center justify-between px-3 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition">
+                <span class="flex items-center gap-3">🎤 ライブセトリアーカイブ</span>
+            </a>
+
+        </nav>
+        
+        <!-- フッター -->
+        <div class="p-3 border-t border-slate-700 text-xs text-slate-500 text-center">
+            Portal v1.0
+        </div>
+    </aside>
+
+    <!-- メインコンテンツ領域 (iframe) -->
+    <main class="flex-1 w-full bg-slate-100 relative">
+        <iframe 
+            id="contentFrame" 
+            src="magical_mirai_2026_hamamatsu_parking_navi.html" 
+            class="w-full h-full border-none absolute inset-0"
+            title="メインコンテンツ">
+        </iframe>
+    </main>
+
+    <script>
+        // メニューの開閉
+        function toggleMenu() {
+            const drawer = document.getElementById('drawerMenu');
+            const overlay = document.getElementById('drawerOverlay');
+            const isOpen = !drawer.classList.contains('-translate-x-full');
+
+            if (isOpen) {
+                drawer.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            } else {
+                drawer.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            }
+        }
+
+        // iframeの読み込み先を切り替える処理
+        function switchPage(url, btnElement) {
+            // iframeのsrcを対象のHTMLファイルに切り替え
+            document.getElementById('contentFrame').src = url;
+            
+            // アクティブなメニュースタイルを変更
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.className = 'nav-item flex items-center justify-between px-3 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition';
+            });
+            if (btnElement) {
+                btnElement.className = 'nav-item flex items-center gap-3 px-3 py-3 rounded-lg bg-miku-600/20 text-miku-500 font-bold border border-miku-500/30 transition';
+            }
+            
+            // メニューを閉じる
+            toggleMenu();
+        }
+    </script>
+</body>
+</html>
