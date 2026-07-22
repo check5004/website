@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マジカルミライ2026 浜松 駐車場ナビ</title>
+    <!-- Tailwind CSS (スタイリング) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        miku: {
+                            50: '#e6f7f6',
+                            100: '#ceeff0',
+                            500: '#00a39e',
+                            600: '#008581',
+                            700: '#006865',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16 selection:bg-teal-100 selection:text-teal-900">
+
+    <!-- ヘッダー -->
+    <header class="bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 text-white shadow-md sticky top-0 z-30 px-4 py-3">
+        <div class="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div>
+                <div class="inline-flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-full text-[11px] font-bold text-white mb-0.5">
+                    ✨ マジカルミライ 2026 浜松
+                </div>
+                <h1 class="text-base sm:text-lg font-bold flex items-center gap-2">
+                    🚗 アクトシティ周辺 駐車場コピペナビ
+                </h1>
+            </div>
+
+            <button onclick="copyAllNames()" class="text-xs bg-white/10 hover:bg-white/20 active:bg-white/30 border border-white/30 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-medium">
+                📋 全名称を一括コピー
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-3 sm:px-4 pt-4">
+
+        <!-- 概要カード -->
+        <div class="grid grid-cols-3 gap-2 bg-white rounded-xl p-3 border border-slate-200 shadow-sm text-center mb-4 text-xs sm:text-sm">
+            <div class="bg-teal-50/70 rounded-lg p-2 border border-teal-100/50">
+                <span class="text-slate-500 block text-[11px]">掲載数</span>
+                <span class="font-bold text-teal-800 text-base sm:text-lg">10 箇所</span>
+            </div>
+            <div class="bg-teal-50/70 rounded-lg p-2 border border-teal-100/50">
+                <span class="text-slate-500 block text-[11px]">合計収容数</span>
+                <span class="font-bold text-teal-800 text-base sm:text-lg">約 2,600 台</span>
+            </div>
+            <div class="bg-teal-50/70 rounded-lg p-2 border border-teal-100/50">
+                <span class="text-slate-500 block text-[11px]">最安最大料金</span>
+                <span class="font-bold text-teal-800 text-base sm:text-lg">700 円</span>
+            </div>
+        </div>
+
+        <!-- 検索・ソート・タグ操作パネル -->
+        <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm mb-4 space-y-3">
+            
+            <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+                <!-- 検索窓 -->
+                <div class="relative flex-1">
+                    <input type="text" id="searchInput" oninput="renderParkings()" placeholder="駐車場名やキーワードで検索..." class="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50 focus:bg-white transition">
+                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
+                </div>
+
+                <!-- 並び替え -->
+                <div class="flex items-center gap-1.5 text-xs">
+                    <span class="text-slate-500 font-medium shrink-0">順序:</span>
+                    <select id="sortSelect" onchange="renderParkings()" class="w-full sm:w-auto border border-slate-300 bg-slate-50 rounded-lg px-2 py-1.5 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        <option value="recommended">おすすめ順</option>
+                        <option value="distance">会場から近い順</option>
+                        <option value="capacity">収容台数が多い順</option>
+                        <option value="price">最大料金が安い順</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- クイック絞り込みタグ -->
+            <div class="flex flex-wrap gap-1.5 text-xs pt-1 border-t border-slate-100" id="tagGroup">
+                <button onclick="setFilterTag('all', this)" class="tag-btn px-3 py-1 rounded-full font-medium transition bg-teal-600 text-white shadow-sm">すべて</button>
+                <button onclick="setFilterTag('near', this)" class="tag-btn px-3 py-1 rounded-full font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200">徒歩5分以内</button>
+                <button onclick="setFilterTag('cheap', this)" class="tag-btn px-3 py-1 rounded-full font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200">1,000円以下</button>
+                <button onclick="setFilterTag('large', this)" class="tag-btn px-3 py-1 rounded-full font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200">200台以上の大型</button>
+                <button onclick="setFilterTag('south', this)" class="tag-btn px-3 py-1 rounded-full font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200">穴場（南口側）</button>
+            </div>
+
+        </div>
+
+        <!-- 駐車場カード一覧 -->
+        <div id="parkingContainer" class="space-y-3">
+            <!-- JavaScriptで描画されます -->
+        </div>
+
+    </main>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-xl transition-all duration-300 opacity-0 translate-y-4 pointer-events-none z-50 flex items-center gap-2 backdrop-blur-sm border border-slate-700/50">
+        <span class="text-emerald-400 font-bold">✓</span>
+        <span id="toastMsg">コピー完了！</span>
+    </div>
+
+    <script>
+        // 駐車場データ定義
+        const PARKINGS_DATA = [
+            {
+                id: 1,
+                name: "アクトシティ地下駐車場",
+                walkMinutes: 0,
+                distanceText: "会場直結",
+                capacity: 350,
+                maxPrice: 2400,
+                priceText: "20分 100円（日中最大なし）",
+                recommendScore: 85,
+                badges: ["会場直結", "雨に濡れない"],
+                isSouth: false,
+                desc: "アクトシティ直下で一番便利。ただし日中最大料金がないため長時間駐車は料金注意。朝早く埋まりやすい。"
+            },
+            {
+                id: 2,
+                name: "丸倉本社モータープール",
+                walkMinutes: 2,
+                distanceText: "徒歩約2分",
+                capacity: 300,
+                maxPrice: 1500,
+                priceText: "6時間 1,000円 / 12時間 1,500円",
+                recommendScore: 98,
+                badges: ["【第一本命】", "会場至近", "定額制"],
+                isSouth: false,
+                desc: "アクトシティの目と鼻の先で300台の大容量。定額制でイベント等長時間滞在に最適の超おすすめスポット。"
+            },
+            {
+                id: 3,
+                name: "NPC24H浜松駅東パーキング",
+                walkMinutes: 2,
+                distanceText: "徒歩約2分",
+                capacity: 65,
+                maxPrice: 1300,
+                priceText: "平日最大 約1,300円",
+                recommendScore: 80,
+                badges: ["会場至近"],
+                isSouth: false,
+                desc: "アクトシティすぐ東側のコインパーキング。台数は65台と少なめだが距離は至近。"
+            },
+            {
+                id: 4,
+                name: "丸倉広小路モータープール",
+                walkMinutes: 5,
+                distanceText: "徒歩約4〜5分",
+                capacity: 200,
+                maxPrice: 1500,
+                priceText: "6時間 1,000円 / 12時間 1,500円",
+                recommendScore: 92,
+                badges: ["大容量", "徒歩5分圏"],
+                isSouth: false,
+                desc: "丸倉本社の系列でアクトシティ西側エリア。200台収容でき、丸倉本社満車時の第一候補。"
+            },
+            {
+                id: 5,
+                name: "NPC24H浜松駅東第2パーキング",
+                walkMinutes: 5,
+                distanceText: "徒歩約5分",
+                capacity: 70,
+                maxPrice: 1200,
+                priceText: "12時間最大 1,200円",
+                recommendScore: 82,
+                badges: ["穴場南口"],
+                isSouth: true,
+                desc: "新幹線高架下の南口側エリア。混雑しやすい北口側を避けたい時の穴場。"
+            },
+            {
+                id: 6,
+                name: "浜松駅南地下駐車場",
+                walkMinutes: 6,
+                distanceText: "徒歩約6分",
+                capacity: 300,
+                maxPrice: 3000,
+                priceText: "24時間最大 3,000円",
+                recommendScore: 70,
+                badges: ["穴場南口", "最後の砦"],
+                isSouth: true,
+                desc: "南口側の大型地下駐車場。最大料金は高めだが300台と大きく、北側全滅時の保険として優秀。"
+            },
+            {
+                id: 7,
+                name: "棒屋パーキング",
+                walkMinutes: 7,
+                distanceText: "徒歩約6〜7分",
+                capacity: 286,
+                maxPrice: 1000,
+                priceText: "12時間最大 1,000円",
+                recommendScore: 95,
+                badges: ["コスパ優秀", "24H自走式"],
+                isSouth: false,
+                desc: "286台の大型立体駐車場。12時間1,000円と安く、24時間入出庫可能で非常に使い勝勝手が良い。"
+            },
+            {
+                id: 8,
+                name: "浜松市営 駅北駐車場",
+                walkMinutes: 8,
+                distanceText: "徒歩約7〜8分",
+                capacity: 590,
+                maxPrice: 700,
+                priceText: "12時間最大 700円",
+                recommendScore: 96,
+                badges: ["【地域最大級】", "【最安クラス】"],
+                isSouth: false,
+                desc: "590台を誇る浜松駅周辺最大級の市営駐車場。12時間700円と格安。少し歩いても安く確実に停めたい人向け。"
+            },
+            {
+                id: 9,
+                name: "浜松市営 旭町駐車場",
+                walkMinutes: 8,
+                distanceText: "徒歩約7〜8分",
+                capacity: 200,
+                maxPrice: 700,
+                priceText: "12時間毎最大 700円",
+                recommendScore: 90,
+                badges: ["【最安クラス】", "市営"],
+                isSouth: false,
+                desc: "駅北駐車場と同グループの格安市営駐車場。12時間700円で駐車料金を浮かせたい人に最適。"
+            },
+            {
+                id: 10,
+                name: "寿モータープール",
+                walkMinutes: 9,
+                distanceText: "徒歩約8〜9分",
+                capacity: 237,
+                maxPrice: 1800,
+                priceText: "20分 100円前後",
+                recommendScore: 75,
+                badges: ["繁華街エリア"],
+                isSouth: false,
+                desc: "浜松駅北側の繁華街エリアにある大型立体駐車場。237台収容可能。"
+            }
+        ];
+
+        let activeTag = 'all';
+
+        // トースト通知表示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = message;
+            
+            toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+            }, 2500);
+        }
+
+        // コピー処理 (Clipboard API & Fallback)
+        function copyToClipboard(text, btnElement) {
+            function success() {
+                showToast(`「${text}」をコピーしました！`);
+                if (btnElement) {
+                    const originalText = btnElement.innerHTML;
+                    btnElement.innerHTML = `✓ コピー完了!`;
+                    btnElement.classList.replace('bg-teal-600', 'bg-emerald-600');
+                    setTimeout(() => {
+                        btnElement.innerHTML = originalText;
+                        btnElement.classList.replace('bg-emerald-600', 'bg-teal-600');
+                    }, 1800);
+                }
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(success).catch(() => fallbackCopy(text, success));
+            } else {
+                fallbackCopy(text, success);
+            }
+        }
+
+        function fallbackCopy(text, callback) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                callback();
+            } catch (err) {
+                showToast("コピーに失敗しました");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // 全件一括コピー
+        function copyAllNames() {
+            const allNames = PARKINGS_DATA.map(p => p.name).join('\n');
+            copyToClipboard(allNames, null);
+        }
+
+        // タグ切り替え
+        function setFilterTag(tagName, btn) {
+            activeTag = tagName;
+            document.querySelectorAll('.tag-btn').forEach(b => {
+                b.className = "tag-btn px-3 py-1 rounded-full font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200";
+            });
+            btn.className = "tag-btn px-3 py-1 rounded-full font-medium transition bg-teal-600 text-white shadow-sm";
+            renderParkings();
+        }
+
+        // 描画メイン処理
+        function renderParkings() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const sortBy = document.getElementById('sortSelect').value;
+            const container = document.getElementById('parkingContainer');
+
+            // フィルター
+            let filtered = PARKINGS_DATA.filter(item => {
+                const matchSearch = item.name.toLowerCase().includes(searchTerm) ||
+                                    item.desc.toLowerCase().includes(searchTerm) ||
+                                    item.badges.some(b => b.toLowerCase().includes(searchTerm));
+
+                let matchTag = true;
+                if (activeTag === 'near') matchTag = item.walkMinutes <= 5;
+                if (activeTag === 'cheap') matchTag = item.maxPrice <= 1000;
+                if (activeTag === 'large') matchTag = item.capacity >= 200;
+                if (activeTag === 'south') matchTag = item.isSouth;
+
+                return matchSearch && matchTag;
+            });
+
+            // ソート
+            filtered.sort((a, b) => {
+                if (sortBy === 'recommended') return b.recommendScore - a.recommendScore;
+                if (sortBy === 'distance') return a.walkMinutes - b.walkMinutes;
+                if (sortBy === 'capacity') return b.capacity - a.capacity;
+                if (sortBy === 'price') return a.maxPrice - b.maxPrice;
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl p-8 text-center text-slate-500 border border-slate-200">
+                        条件に一致する駐車場が見つかりませんでした。
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
+                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name + ' 静岡県浜松市')}`;
+                
+                return `
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm hover:border-teal-400 transition-all p-3.5 sm:p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <div class="flex flex-wrap gap-1">
+                                ${item.badges.map(badge => `
+                                    <span class="bg-teal-50 text-teal-800 border border-teal-200/80 text-[11px] font-bold px-2 py-0.5 rounded">
+                                        ${badge}
+                                    </span>
+                                `).join('')}
+                            </div>
+                            <div class="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                                📍 ${item.distanceText}
+                            </div>
+                        </div>
+
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900 mb-2">
+                            ${item.name}
+                        </h2>
+
+                        <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg text-xs sm:text-sm mb-3 border border-slate-100">
+                            <div>
+                                <span class="text-slate-400 block text-[10px] font-medium">収容台数</span>
+                                <span class="font-bold text-slate-700">🚗 ${item.capacity} 台</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[10px] font-medium">料金目安</span>
+                                <span class="font-bold text-teal-700">💰 ${item.priceText}</span>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-600 mb-3.5 leading-relaxed">
+                            ${item.desc}
+                        </p>
+
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                            <button onclick="copyToClipboard('${item.name}', this)" class="w-full bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold py-2.5 px-3 rounded-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-sm">
+                                📋 名前をコピー
+                            </button>
+
+                            <a href="${mapUrl}" target="_blank" rel="noopener noreferrer" class="w-full bg-slate-800 hover:bg-slate-900 active:bg-black text-white font-bold py-2.5 px-3 rounded-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-sm text-center">
+                                🧭 Mapでナビ起動 ↗
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 初期化
+        window.addEventListener('DOMContentLoaded', renderParkings);
+    </script>
+</body>
+</html>
