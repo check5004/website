@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automotive SPICE® プロセスエキスパート模擬試験</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f3f4f6;
+        }
+        .btn-transition { 
+            transition: all 0.2s ease-in-out; 
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const examData = [
+            { id: 1, textEn: "A lack of necessary resources, as identified in MAN.3, is a problem to be considered within the SUP.9 process.", textJa: "必要なリソースの不足は、MAN.3で特定されているように、SUP.9プロセスの中で考慮されるべき問題である。", answer: "TRUE", explanation: "SUP.9 refers to all types of problems a project may encounter, not just defects found in the end-product and its intermediate work products.\nSUP.9は、最終製品とその中間作業成果物で検出された欠陥だけでなく、プロジェクトが直面する可能性のあるあらゆる種類の問題について言及している。" },
+            { id: 2, textEn: "A rationale for system architecture design decisions cannot be based on simulations.", textJa: "システムアーキテクチャ設計の決定根拠は、シミュレーションに基づくことはできない。", answer: "FALSE", explanation: "Simulations are listed as an example for methods being suitable for analyzing technical aspects (see note 5).\nシミュレーションは、技術的な側面の分析に適切な手法の例として挙げられている (備考5を参照のこと)。" },
+            { id: 3, textEn: "According to capability dimension of ASPICE, there are 5 capability levels (CL1 to CL5).", textJa: "ASPICEの能力座標には、5つの能力レベル (CL1からCL5) がある。", answer: "FALSE", explanation: "According to the capability dimension of ASPICE, there are 6 capability levels (CL0 to CL5).\nASPICEの能力座標には、6つの能力レベル (CL0からCL5) がある。" },
+            { id: 4, textEn: "An automated, tool-based approach is not required to implement traceability.", textJa: "トレーサビリティの実現において、自動化されたツールに基づくアプローチは求められていない。", answer: "TRUE", explanation: "There is no outcome or achievement which requires tooling, in fact often simpler more efficient means of traceability exist outside of specific tool linkage.\nツールを必要とする成果や達成成果は存在しない。実際、特定のツールによる対応付け以外の方法で、よりシンプルで効率的なトレーサビリティを実現できる場合も多い。" },
+            { id: 5, textEn: "Analysis of problem trends never leads to action.", textJa: "問題傾向の分析は、決して対策につながることはない。", answer: "FALSE", explanation: "See SUP.9.BP7: \"....and initiate related actions.\"\nSUP.9.BP7 「~関連する処置を開始する。」を参照のこと。" },
+            { id: 6, textEn: "At CL1, communication with the affected parties is not limited to communication driven by project management.", textJa: "CL1では、影響を受ける関係者との情報伝達は、プロジェクト管理が主導する情報伝達に限定されていない。", answer: "TRUE", explanation: "The affected parties are any role / team member on the project potentially, not just those roles involved in project management.\n影響を受ける関係者には、プロジェクト管理に関わる役割だけではなく、プロジェクトのいかなる役割/チームメンバーでもなり得る。" },
+            { id: 7, textEn: "At CL2, rescheduling of activities is a typical technique to monitor the performance of the process.", textJa: "CL2では、活動スケジュールの再設定は、プロセスの実施を監視するための典型的な技法である。", answer: "FALSE", explanation: "This is an example of adjusting, not monitoring.\nこれは調整の例であり、監視の例ではない。" },
+            { id: 8, textEn: "Capability level 3 requires the standard process defined for the organization to be implemented as a defined process.", textJa: "能力レベル3は、組織のために定義された標準プロセスが、定義されたプロセスとして実装することを求めている。", answer: "TRUE", explanation: "See achievements of PA 3.1 and PA 3.2.\nPA 3.1およびPA 3.2の達成成果を参照のこと。" },
+            { id: 9, textEn: "CL3 does not require the standard process to be maintained.", textJa: "CL3では、標準プロセスを維持することを求めていない。", answer: "FALSE", explanation: "Outcome #1 requires to maintain the standard process.\n達成成果1)で、標準プロセスが維持されることを求めている。" },
+            { id: 10, textEn: "Code reviews and checks against coding standards are often part of the software unit verification.", textJa: "コードレビューとコーディング標準に対するチェックは、ソフトウェアユニット検証の一部であることが多い。", answer: "TRUE", explanation: "Typical and in the informative part of SWE.4 process.\nこれは、SWE.4プロセスにおける一般的かつ参考的な内容である。" },
+            { id: 11, textEn: "Configuration items can be more than just system and software work products.", textJa: "システムとソフトウェアの作業成果物以外も、構成品目になり得る。", answer: "TRUE", explanation: "All work products a project creates could be considered as configuration items depending upon their significance to the project.\nプロジェクトが作成するすべての作業成果物は、プロジェクトにおける重要度に応じて、構成品目と見なすことができる。" },
+            { id: 12, textEn: "Configuration management activities do not have to be planned at an early phase of the project.", textJa: "構成管理活動は、プロジェクトの初期フェーズで計画する必要はない。", answer: "FALSE", explanation: "Determining critical work products to manage and defining the dependencies between these work products is key to identifying Configuration Items and the necessary procedures and systems to manage them from the start of the project.\n管理対象の重要な作業成果物を決定し、それらの作業成果物間の依存性を定義することが、プロジェクトの開始段階から構成品目と、それらを管理するために必要な手順やシステムを識別する上で重要である。" },
+            { id: 13, textEn: "Criteria for regression verification do not need to be considered when selecting verification measures.", textJa: "検証手段を選定する際に、回帰検証の基準を考慮する必要はない。", answer: "FALSE", explanation: "All verification processes have a \"Select verification measures\" practice that states that \"criteria for regression verification\" must be considered.\nすべての検証プロセスには、「検証手段の選定」というプラクティスがあり、そこでは「回帰検証の基準」を考慮しなければならないと述べられている。" },
+            { id: 14, textEn: "Even if agile methods are used in a project, the processes can in principle be implemented in accordance with ASPICE.", textJa: "プロジェクトがアジャイル手法を使用している場合でも、原則として、ASPICEに従ってプロセスを実施することができる。", answer: "TRUE", explanation: "Again, this is back to the fact that the PAM is a WHAT and not a definition of HOW to meet the outcomes and achievements required for compliance.\n繰り返しになるが、PAMは、「何を」について扱っており、順守するために必要な成果と達成成果を満たすための「どのように」を定義しているのではない。" },
+            { id: 15, textEn: "For PA 2.2, the creation and updating of work products must be planned, monitored and adjusted.", textJa: "PA 2.2においては、作業成果物の作成と更新を計画し、監視し、調整しなければならない。", answer: "FALSE", explanation: "The planning of any activity is a critical aspect of process performance management and in the achievements of PA2.1.\nいかなる活動の計画立案も、プロセス実施管理の重要な側面であり、これはPA2.1の達成成果の中に存在している。" },
+            { id: 16, textEn: "For SUP.9 to reach CL2, it is not necessary to plan and monitor problem analysis activities.", textJa: "SUP.9をCL2にするために、問題分析活動を計画し、監視する必要はない。", answer: "FALSE", explanation: "This is a basic requirement of PA2.1 achievements.\nこれはPA2.1の達成における基本的な要求である。" },
+            { id: 17, textEn: "From the point of view of PA 2.2, it is not necessary to define which work products must be stored.", textJa: "PA 2.2の観点において、どの作業成果物を保管しなければならないかを定義する必要はない。", answer: "FALSE", explanation: "This is a critical aspect of work product management and in the achievements of PA2.2.\nこれは作業成果物管理の重要な側面であり、PA2.2の達成成果の中に存在している。" },
+            { id: 18, textEn: "GP3.2.3 does not require taking care of the process infrastructure.", textJa: "GP3.2.3では、プロセスインフラを考慮することは求められていない。", answer: "FALSE", explanation: "GP3.2.3 deals with non-human resources, including process infrastructure.\nGP3.2.3は、プロセスインフラを含む人的リソース以外のものを取り扱う。" },
+            { id: 19, textEn: "If severe non-conformities are identified during quality assurance activities but no evidence of corrective action is available, SUP.1.BP6 may still be rated “F”.", textJa: "品質保証活動中に深刻な不適合が識別されたが、是正処置の証拠が存在しない場合、それでもSUP.1.BP6は「F」と評定してよい。", answer: "FALSE", explanation: "The indicator BP6 and the corresponding outcome require the non-conformances to be resolved, as well as prevented in the future.\n指標BP6と対応する成果では、不適合を解決し、将来のために予防することを求めている。" },
+            { id: 20, textEn: "If static verification of software units is performed, the results must be communicated.", textJa: "ソフトウェアユニットの静的検証を実施する場合、その結果を伝達しなければならない。", answer: "TRUE", explanation: "BP.5 of SWE.4 requires the results of software unit verification to be communicated.\nSWE.4.BP.5は、ソフトウェアユニット検証の結果が伝達されることを求めている。" },
+            { id: 21, textEn: "If the human resources required for performing the process are not available, this is a weakness of GP2.1.6.", textJa: "プロセスの実施に必要な人的リソースが利用できない場合、これはGP2.1.6の弱みとなる。", answer: "FALSE", explanation: "This is a weakness of GP2.1.4.\nこれは、GP2.1.4の弱みである。" },
+            { id: 22, textEn: "If the PA has achieved a rating of less than 100% but more than 85%, it should be rated \"F-\".", textJa: "PAの評定において、100%未満だが85%より大きい場合、「F-」と評定されるべきである。", answer: "FALSE", explanation: "According to the rating scale this means \"F\". \"F-\" is not defined on the rating scale.\nこの場合、評定尺度に基づき「F」となる。「F-」は評定尺度に定義されていない。" },
+            { id: 23, textEn: "In a development project, it is not enough to ensure the quality of process activities to meet the requirements of SUP.1.", textJa: "開発プロジェクトにおいて、SUP.1の要求を満たすためにプロセス活動の品質を保証するだけでは十分ではない。", answer: "TRUE", explanation: "See SUP.1 process purpose: \"...to provide independent and objective assurance that work products and processes comply with defined criteria and that non-conformances are resolved and further prevented.\"\nSUP.1のプロセス目的を参照のこと。「品質保証プロセスの目的は、作業成果物およびプロセスが定義された基準を遵守しており、不適合事項が解決され、さらに予防されていることを、独立的かつ客観的に保証することである。」" },
+            { id: 24, textEn: "In ASPICE, it is not required that the software units will be developed by a different person than the developer who created the corresponding detailed design.", textJa: "ASPICEにおいて、ソフトウェアユニットが対応する詳細設計を作成した開発者とは別の人物によって作成されることは求められていない。", answer: "TRUE", explanation: "ASPICE does not define HOW, and as well does not define WHO.\nASPICEは、「どのように」について定義しておらず、また「誰が」についても同様に定義していない。" },
+            { id: 25, textEn: "In SWE.4, the software unit verification must take into account the criteria for regression verification.", textJa: "SWE.4において、ソフトウェアユニット検証は回帰検証の基準を考慮しなければならない。", answer: "TRUE", explanation: "As per outcome #2\n成果2)を参照のこと。" },
+            { id: 26, textEn: "Process performance objectives may include quantitative performance targets.", textJa: "プロセス実施目標には、定量的な実施目標を含めてよい。", answer: "TRUE", explanation: "This is a possible means of ensuring performance objectives are met, but not the only means.\nこれは、実施目標の達成を確実にするための方法となり得るが、唯一の方法ではない。" },
+            { id: 27, textEn: "Quality assurance activities cannot be performed by any project member.", textJa: "品質保証活動は、いかなるプロジェクトメンバーでも実施できるわけではない。", answer: "TRUE", explanation: "Independence and objectivity must be ensured.\n独立性と客観性を確保しなければならない。" },
+            { id: 28, textEn: "Quality assurance of work products must be performed objectively.", textJa: "作業成果物の品質保証は客観的に実施されなければならない。", answer: "TRUE", explanation: "See the process purpose \".. to provide independent and objective assurance...\" and also SUP.1.BP1.\nSUP.1プロセス目的とBP1を参照のこと。「~独立的かつ客観的に保証する。」" },
+            { id: 29, textEn: "Resolving non-conformities according to SUP.1.BP6 is normally performed by non-QA personnel.", textJa: "SUP.1.BP6に従った不適合の解決は、通常、QA担当者以外の要員によって実施される。", answer: "TRUE", explanation: "QA does not have the manpower nor does it have the in-depth knowledge and skills to fix all problems.\nQA(部門)は、すべての問題を解決するためのマンパワーも、深い知識やスキルも持たない。" },
+            { id: 30, textEn: "Software defects found by software unit testing and resolved immediately must still be recorded and managed through the problem management process.", textJa: "ソフトウェアユニットテストで検出され、即座に解決したソフトウェアの不具合であっても、問題管理プロセスを通じて記録し、管理しなければならない。", answer: "FALSE", explanation: "There is no outcome or achievement which requires this behavior.\nこのような振る舞いを求める成果も達成成果も存在しない。" },
+            { id: 31, textEn: "Software unit verification is used to prove that the software units produced meet the software requirements.", textJa: "ソフトウェアユニット検証は、作成したソフトウェアユニットがソフトウェア要求を満たしていることを証明するために使用される。", answer: "FALSE", explanation: "The purpose states \"The purpose is to verify that software units are consistent with the software detailed design.\"\nプロセス目的には次のように記載されている。「目的は、ソフトウェアユニットがソフトウェア詳細設計と一貫性を持つことを検証することである。」" },
+            { id: 32, textEn: "Software unit verification SWE.4 does not require to ensure compliance between the software units and the software architecture.", textJa: "SWE.4 ソフトウェアユニット検証は、ソフトウェアユニットとソフトウェアアーキテクチャとの間の遵守性を確保することを求めていない。", answer: "TRUE", explanation: "The compliance determined in SWE.4 is between the software units and the verification measures for each Software unit.\nSWE.4では、ソフトウェアユニットと、各ソフトウェアユニットの検証手段との間の遵守性が定められている。" },
+            { id: 33, textEn: "Some aspects of the work product management process attribute can be supported by providing good templates.", textJa: "作業成果物管理プロセス属性のいくつかの側面は、適切なテンプレートを提供することで支援することができる。", answer: "TRUE", explanation: "Good templates assist in achieving work objectives (how to do the work/achieve the PA1.1 outcomes). They also support GP2.2.1 establishing the quality objectives for the work product.\n適切なテンプレートは、作業目標の達成 (作業の進め方/PA1.1の成果を達成する方法)に役立つ。また、これらは作業成果物の品質目標を確立するためのGP2.2.1も支援する。" },
+            { id: 34, textEn: "Stakeholder requirements are not just what the customer wants.", textJa: "利害関係者要求は、顧客が欲する内容だけではない。", answer: "TRUE", explanation: "A project can have multiple stakeholders internal and external to the company of the project team.\nプロジェクトには、プロジェクトチームの企業内外に複数の利害関係者が存在することがある。" },
+            { id: 35, textEn: "Structuring and categorizing the software requirements is not helpful for the release planning of the project.", textJa: "ソフトウェア要求を構造化して分類することは、プロジェクトのリリース計画策定の役に立たない。", answer: "FALSE", explanation: "In fact this is actually a reasonable approach for structuring the requirements, to align them with the development release plan.\n実際、これは開発リリース計画と整合させて要求を構造化するための合理的なアプローチである。" },
+            { id: 36, textEn: "SUP.1 does not have to ensure the quality of deliveries objectively and without conflicts of interest.", textJa: "SUP.1では、納入物の品質を利益相反なく客観的に保証する必要はない。", answer: "FALSE", explanation: "This goal is part of the purpose of the process. The deliveries are also work products.\nプロセス目的を参照のこと。納入物も作業成果物である。" },
+            { id: 37, textEn: "SWE.3 requires traceability between software detailed design and software requirements.", textJa: "SWE.3は、ソフトウェア詳細設計とソフトウェア要求との間のトレーサビリティを求めている。", answer: "TRUE", explanation: "Yes, as stated in SWE.3.BP4.\nSWE.3.BP4に記載されている通りで、正しい。" },
+            { id: 38, textEn: "SWE.6 GP2.1.1 should also be assessed on the basis of the existence and completeness of the software verification strategy.", textJa: "SWE.6 GP2.1.1は、ソフトウェア検証戦略の存在と完全性に基づいても評価されるべきである。", answer: "TRUE", explanation: "This is an example how objectives for SWE.6 may be packaged in a strategy document. If such a document exists, it should be reviewed relative to the needs of achieving the outcomes of the process.\nこれは、SWE.6の目標が戦略文書にどのように取り入れられるかの例である。このような文書が存在する場合、プロセス成果を達成するためのニーズに関連していることをレビューすべきである。" },
+            { id: 39, textEn: "SYS.4 requires bidirectional traceability between system integration verification measures and the elements of the system architecture.", textJa: "SYS.4は、システム統合の検証手段とシステムアーキテクチャエレメントとの間の双方向トレーサビリティを求めている。", answer: "TRUE", explanation: "As per the outcome #5\n成果5)を参照のこと。" },
+            { id: 40, textEn: "System integration verification must ensure consistency between the integrated system elements and the system requirements.", textJa: "システム統合検証では、統合されたシステムエレメントとシステム要求との間の一貫性を確保しなければならない。", answer: "FALSE", explanation: "The purpose of SYS.4 is to ensure the integrated system elements are consistent with the system architecture, not the system requirements (that is the purpose of SYS.5).\nSYS.4の目的は、統合されたシステムエレメントがシステムアーキテクチャとの一貫性を確保することであり、システム要求との一貫性(SYS.5の目的)ではない。" },
+            { id: 41, textEn: "Tailoring the standard process only means that elements of the process can be omitted on the basis of defined criteria.", textJa: "標準プロセスをテーラリングするということは、定義された基準に基づいてプロセスの要素を省略できることを意味するに過ぎない。", answer: "FALSE", explanation: "Tailoring defines alternative approaches on how a project team does the work to achieve the outcomes. The standard process defines these alternatives and a project team \"tailors\" by selecting the alternative approach they will use. This could involve activity deletions and additions.\nテーラーリングとは、プロジェクトチームが成果を達成するために行う作業方法について、代替アプローチを定義することである。標準プロセスでこれらの選択肢を定義し、プロジェクトチームが自ら使用する予定の代替アプローチを選択することで「テーラーリング」を行う。これには、活動の削除や追加が含まれる可能性がある。" },
+            { id: 42, textEn: "The agreed software requirements may generally also be communicated outside the software development team.", textJa: "一般的に、合意されたソフトウェア要求は、ソフトウェア開発チーム以外にも伝達される場合がある。", answer: "TRUE", explanation: "Nothing limits the communication, it is required to all affected parties, which likely involves others in the project besides the software development team.\n伝達についての制限はなく、影響を受けるすべての関係者への伝達が求められる。これは、ソフトウェア開発チーム以外のプロジェクト関係者も含まれる可能性が高い。" },
+            { id: 43, textEn: "The completed performance of software integration verification does not require that all elements of the software architecture have been fully integrated.", textJa: "ソフトウェア統合検証の完全な実施に、ソフトウェアアーキテクチャのすべてのエレメントが完全に統合されている必要はない。", answer: "FALSE", explanation: "See SWE.5.BP4: \"Integrate the software elements until the software is fully integrated ...\"\nSWE.5.BP4を参照のこと。「~ソフトウェアが完全に統合されるまでソフトウェアエレメントを統合する。」" },
+            { id: 44, textEn: "The deviations identified in SUP.1.BP3 cannot be included in the problem resolution management process.", textJa: "SUP.1.BP3で識別された逸脱は、問題解決管理プロセスに含めることはできない。", answer: "FALSE", explanation: "See note 5 in SUP.1.BP6.\nSUP.1.BP6 備考5を参照のこと。" },
+            { id: 45, textEn: "The intention of PA3.2 is to define processes for an entire organization or for a part of the organization.", textJa: "PA3.2の意図は、組織全体または組織の一部に対して、プロセスを定義することである。", answer: "FALSE", explanation: "This is closer to the purpose of PA3.1 but is not related to any achievement of PA3.2\nこれはPA3.1の目的により近いものであるが、PA3.2のいかなる達成成果とも関連していない。" },
+            { id: 46, textEn: "The interfaces of the project according to MAN.3 BP7 are not limited to the customer and the sub-projects.", textJa: "MAN.3.BP7に基づくプロジェクトの窓口は、顧客とサブプロジェクトに限定されない。", answer: "TRUE", explanation: "Yes, it can be a lot more. See note 9 in MAN.3.\n正しい。これよりも多く存在する可能性がある。MAN.3 備考9を参照のこと。" },
+            { id: 47, textEn: "The process performance objectives of a process must include key performance indicators (KPIs).", textJa: "プロセスのプロセス実施目標には、主要パフォーマンス指標 (KPI) を含めなければならない。", answer: "FALSE", explanation: "This is not in the achievements of PA2.1, this is just one possible way of measuring progress against objectives.\nこれはPA2.1の達成成果に含まれず、目標に対する進捗を測定するための可能な方法の一つにすぎない。" },
+            { id: 48, textEn: "The purpose of SUP.9 is, among other things, to identify, record and analyze problems.", textJa: "SUP.9の目的は、とりわけ、問題を識別し、記録し、分析することである。", answer: "TRUE", explanation: "As noted in the process purpose.\nプロセス目的に記載されている通りである。" },
+            { id: 49, textEn: "The quality of work products and processes does not necessarily have to be independently and objectively assured.", textJa: "作業成果物とプロセスの品質は、必ずしも独立的かつ客観的に保証される必要はない。", answer: "FALSE", explanation: "This is in the purpose of SUP.1.\nSUP.1の目的を参照のこと。" },
+            { id: 50, textEn: "The requirements for the storage and control of work products may include distribution channels for the work products.", textJa: "作業成果物の保管と制御に関する要求には、作業成果物の配布経路を含むとよい。", answer: "TRUE", explanation: "Defining access to work products/configuration items through distribution channels is a reasonable solution for controlling work products.\n配布経路を通じた作業成果物/構成品目のアクセス方法を定義することは、作業成果物を制御するための妥当な策である。" },
+            { id: 51, textEn: "The verification measure may not specify conditions and criteria for the start and completion of the verification.", textJa: "検証手段では、検証の開始・完了の条件と基準を仕様化しなくてもよい。", answer: "FALSE", explanation: "A verification measure requires a precondition and an expected result.\n検証手段には、前提条件と期待される結果が求められる。" },
+            { id: 52, textEn: "The verification measures for system integration do not have to provide evidence that the system requirements have been met.", textJa: "システム統合の検証手段では、システム要求が満たされていることを示す証拠を提供する必要はない。", answer: "TRUE", explanation: "The purpose of SYS.4 is to ensure the integrated system elements are consistent with the system architecture, not the system requirements (that is the purpose of SYS.5).\nSYS.4の目的は、統合されたシステムエレメントがシステムアーキテクチャとの一貫性を確保することであり、システム要求との一貫性(SYS.5の目的)ではない。" },
+            { id: 53, textEn: "To achieve a capability level, all PAs of the lower capability levels must have been rated \"F\".", textJa: "ある能力レベルを達成するためには、それよりも下位の能力レベルの全PAが「F」と評定されていなければならない。", answer: "TRUE", explanation: "Basic rating formula.\n基本的な評定手順。" },
+            { id: 54, textEn: "To achieve CL1, it is sufficient to demonstrate that the key performance indicators (KPIs) defined for the process have been achieved.", textJa: "CL1を達成するためには、プロセスに対して定義された主要パフォーマンス指標(KPI) が達成されていることを実証すれば十分である。", answer: "FALSE", explanation: "KPIs are not a necessary or normative part of ASPICE.\nKPIはASPICEの必須項目でも規範的な項目でもない。" },
+            { id: 55, textEn: "To achieve CL1, the intent of the BPs does not necessarily have to be achieved.", textJa: "CL1を達成するためには、BPの意図が必ずしも達成されている必要はない。", answer: "FALSE", explanation: "BPs are indicators for outcomes being achieved, so the intent of the BPs has to be met somehow. Similar concepts that achieve the outcomes are also acceptable.\nBPは達成されている成果を示す指標であるため、BPの意図は何らかの形で満たされなければならない。成果を達成している同様の概念でも容認可能である。" },
+            { id: 56, textEn: "To achieve PA2.2, the requirements for storing and controlling the process description of the process must be identified.", textJa: "PA2.2を達成するためには、プロセスのプロセス記述を保管および制御するための要求が識別されなければならない。", answer: "FALSE", explanation: "Performing work product management on standard process work products is not an achievement of PA2.2. It is concerned only about the project work products.\n標準プロセスの作業成果物に対して作業成果物管理を実施することは、PA2.2の達成成果ではない。PA2.2は、プロジェクトの作業成果物だけに関係している。" },
+            { id: 57, textEn: "To implement PA3.2, the process performance cycle of the organization must be defined.", textJa: "PA3.2を実装するためには、組織のプロセス実施サイクルを定義しなければならない。", answer: "FALSE", explanation: "Process performance cycle is not defined in the PAM.\nプロセス実施サイクルは、PAMに定義されていない。" },
+            { id: 58, textEn: "Traceability and consistency between the software requirements and the system verification measures must be ensured.", textJa: "ソフトウェア要求とシステム検証手段との間のトレーサビリティと一貫性を確保しなければならない。", answer: "FALSE", explanation: "This is a misconnection between SWE.1 and SYS.5. The model defines the relationship between SWE.1 and SWE.6.\nこれはSWE.1とSYS.5との間の誤ったつながりである。モデルは、SWE.1と SWE.6との間の関係性を定義している。" },
+            { id: 59, textEn: "When analyzing the problem trends, the internally identified problems do not need to be taken into account.", textJa: "問題の傾向を分析する際、社内で特定された問題を考慮する必要はない。", answer: "FALSE", explanation: "SUP.9 refers to all types of problems a project may encounter, not just defects found in the end-product and its intermediate work products.\nSUP.9は、最終製品とその中間作業成果物で検出された欠陥だけでなく、プロジェクトが直面する可能性のあるあらゆる種類の問題について言及している。" },
+            { id: 60, textEn: "Work products created by the project team typically do not contain information items that are relevant to the assessment of process attributes.", textJa: "通常、プロジェクトチームによって作成された作業成果物には、プロセス属性の評価に関連する情報項目は含まれていない。", answer: "FALSE", explanation: "Information items are pieces of information that are typically documented in specific work products of the project.\n情報項目とは、通常、プロジェクトの特定の作業成果物の中で文書化される情報の断片である。" }
+        ];
+
+        const App = () => {
+            const [gameState, setGameState] = useState('start'); // 'start', 'quiz', 'result'
+            const [currentIdx, setCurrentIdx] = useState(0);
+            const [answers, setAnswers] = useState({});
+
+            const handleStart = () => {
+                setAnswers({});
+                setCurrentIdx(0);
+                setGameState('quiz');
+                window.scrollTo(0, 0);
+            };
+
+            const handleAnswer = (ans) => {
+                setAnswers(prev => ({ ...prev, [currentIdx]: ans }));
+                
+                // UX向上のため、回答後は自動で次の問題へ進む（最後の問題以外）
+                if (currentIdx < examData.length - 1) {
+                    setTimeout(() => {
+                        setCurrentIdx(curr => curr + 1);
+                    }, 350);
+                }
+            };
+
+            const handleNext = () => {
+                if (currentIdx < examData.length - 1) setCurrentIdx(curr => curr + 1);
+            };
+
+            const handlePrev = () => {
+                if (currentIdx > 0) setCurrentIdx(curr => curr - 1);
+            };
+
+            const handleSubmit = () => {
+                setGameState('result');
+                window.scrollTo(0, 0);
+            };
+
+            if (gameState === 'start') {
+                return (
+                    <div className="flex flex-col items-center justify-center min-h-screen p-4 fade-in">
+                        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
+                            <h1 className="text-2xl md:text-3xl font-bold text-blue-900 mb-2">intacs® 認定Automotive SPICE®</h1>
+                            <h2 className="text-lg md:text-xl text-gray-600 mb-8 font-medium">プロセスエキスパート模擬試験 (2024-11-15版)</h2>
+                            
+                            <div className="bg-blue-50 text-left p-6 rounded-xl mb-8">
+                                <ul className="space-y-3 text-gray-700">
+                                    <li className="flex items-start">
+                                        <svg className="w-6 h-6 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <span>全60問の <strong>TRUE / FALSE</strong> 形式のテストです。</span>
+                                    </li>
+                                    <li className="flex items-start">
+                                        <svg className="w-6 h-6 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                        <span>選択肢をタップすると自動で次の問題に進みます。</span>
+                                    </li>
+                                    <li className="flex items-start">
+                                        <svg className="w-6 h-6 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        <span>全問終了後、結果サマリーと正解リストを確認できます。</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <button 
+                                onClick={handleStart}
+                                className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-full shadow-lg btn-transition text-lg"
+                            >
+                                テストを開始する
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (gameState === 'result') {
+                const score = examData.reduce((acc, q, idx) => {
+                    return acc + (answers[idx] === q.answer ? 1 : 0);
+                }, 0);
+                const percentage = Math.round((score / examData.length) * 100);
+
+                return (
+                    <div className="max-w-4xl mx-auto p-4 py-8 fade-in">
+                        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-10 mb-8 text-center">
+                            <h2 className="text-3xl font-bold text-gray-800 mb-2">試験結果サマリー</h2>
+                            <div className="flex justify-center items-center my-8">
+                                <div className="relative w-48 h-48 flex flex-col items-center justify-center bg-blue-50 rounded-full border-[10px] border-blue-500 shadow-inner">
+                                    <span className="text-5xl font-bold text-blue-700">{score}</span>
+                                    <span className="text-xl text-blue-400 font-bold mt-1">/ {examData.length}</span>
+                                </div>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-700 mb-8">正答率: <span className={percentage >= 80 ? 'text-green-600' : 'text-blue-600'}>{percentage}%</span></p>
+                            <button 
+                                onClick={handleStart}
+                                className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-full shadow btn-transition flex items-center justify-center mx-auto"
+                            >
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                もう一度挑戦する
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-6 px-2 flex items-center">
+                                <svg className="w-6 h-6 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                解答リスト
+                            </h3>
+                            {}
+                            {examData.map((q, idx) => {
+                                const isCorrect = answers[idx] === q.answer;
+                                const isUnanswered = !answers[idx];
+                                return (
+                                    <div key={q.id} className={`p-5 md:p-6 rounded-xl border-l-8 shadow-sm bg-white ${isCorrect ? 'border-green-500' : 'border-red-500'}`}>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Q {q.id}</span>
+                                            {isCorrect ? 
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    正解
+                                                </span> : 
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">
+                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    不正解
+                                                </span>
+                                            }
+                                        </div>
+                                        
+                                        <div className="mb-5 space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                            <div>
+                                                <span className="text-xs font-bold text-gray-400 block mb-1">English</span>
+                                                <p className="text-gray-800 text-base font-medium leading-relaxed">{q.textEn}</p>
+                                            </div>
+                                            <div className="h-px w-full bg-gray-200"></div>
+                                            <div>
+                                                <span className="text-xs font-bold text-gray-400 block mb-1">日本語</span>
+                                                <p className="text-gray-600 text-sm leading-relaxed">{q.textJa}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                                            <div className={`p-3 rounded-lg border ${!isCorrect ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
+                                                <span className="block text-gray-500 mb-1 text-xs font-bold">あなたの解答</span>
+                                                <span className={`font-bold text-base ${!isCorrect ? 'text-red-600' : 'text-gray-700'}`}>
+                                                    {isUnanswered ? '未解答' : answers[idx]}
+                                                </span>
+                                            </div>
+                                            <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                                                <span className="block text-blue-400 mb-1 text-xs font-bold">正解</span>
+                                                <span className="font-bold text-blue-700 text-base">{q.answer}</span>
+                                            </div>
+                                        </div>
+
+                                        {q.explanation && (
+                                            <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                                                <span className="flex items-center text-yellow-800 font-bold text-sm mb-2">
+                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    解説
+                                                </span>
+                                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{q.explanation}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        
+                        <div className="mt-8 text-center">
+                            <button 
+                                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                                className="text-blue-600 font-medium hover:underline"
+                            >
+                                ↑ トップに戻る
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            const currentQuestion = examData[currentIdx];
+            const progress = ((currentIdx + 1) / examData.length) * 100;
+            const isLastQuestion = currentIdx === examData.length - 1;
+            const answeredCount = Object.keys(answers).length;
+            const allAnswered = answeredCount === examData.length;
+
+            return (
+                <div className="max-w-3xl mx-auto p-4 py-6 md:py-10 min-h-screen flex flex-col fade-in">
+                    
+                    {/* Header & Progress Bar */}
+                    <div className="mb-6 md:mb-8">
+                        <div className="flex justify-between items-end mb-2 px-1">
+                            <span className="text-base font-bold text-blue-800 tracking-wide">Question <span className="text-2xl">{currentIdx + 1}</span> <span className="text-gray-500 text-sm font-normal">/ {examData.length}</span></span>
+                            <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-3 py-1 rounded-full">解答済み: {answeredCount}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+                            <div className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
+                        </div>
+                    </div>
+
+                    {/* Question Card */}
+                    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-10 flex-grow flex flex-col">
+                        {}
+                        <div className="flex-grow flex flex-col justify-center min-h-[200px] mb-8 space-y-6">
+                            <div>
+                                <span className="text-xs font-bold text-blue-400 block mb-2 text-center uppercase tracking-wider">English</span>
+                                <h3 className="text-lg md:text-xl text-gray-800 leading-relaxed font-medium text-center">
+                                    {currentQuestion.textEn}
+                                </h3>
+                            </div>
+                            <div className="flex justify-center"><div className="w-16 h-px bg-gray-300"></div></div>
+                            <div>
+                                <span className="text-xs font-bold text-gray-400 block mb-2 text-center uppercase tracking-wider">日本語</span>
+                                <h3 className="text-md md:text-lg text-gray-600 leading-relaxed font-medium text-center">
+                                    {currentQuestion.textJa}
+                                </h3>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-auto">
+                            <button
+                                onClick={() => handleAnswer('TRUE')}
+                                className={`py-5 px-6 rounded-xl border-2 text-xl font-bold btn-transition flex justify-between items-center outline-none
+                                    ${answers[currentIdx] === 'TRUE' 
+                                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md ring-2 ring-blue-200' 
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-blue-400 hover:bg-gray-50 hover:shadow'}`}
+                            >
+                                <span>TRUE</span>
+                                {answers[currentIdx] === 'TRUE' && (
+                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => handleAnswer('FALSE')}
+                                className={`py-5 px-6 rounded-xl border-2 text-xl font-bold btn-transition flex justify-between items-center outline-none
+                                    ${answers[currentIdx] === 'FALSE' 
+                                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md ring-2 ring-blue-200' 
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-blue-400 hover:bg-gray-50 hover:shadow'}`}
+                            >
+                                <span>FALSE</span>
+                                {answers[currentIdx] === 'FALSE' && (
+                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <div className="flex justify-between items-center mt-8 px-2">
+                        <button
+                            onClick={handlePrev}
+                            disabled={currentIdx === 0}
+                            className={`py-3 px-6 rounded-full font-bold transition-all flex items-center 
+                                ${currentIdx === 0 ? 'opacity-40 cursor-not-allowed bg-gray-200 text-gray-500' : 'bg-white text-gray-700 shadow hover:bg-gray-50 hover:shadow-md'}`}
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                            前へ
+                        </button>
+                        
+                        {isLastQuestion || allAnswered ? (
+                            <button
+                                onClick={handleSubmit}
+                                className={`py-3 px-8 rounded-full font-bold shadow-lg btn-transition flex items-center
+                                    ${allAnswered ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse' : 'bg-gray-800 hover:bg-gray-900 text-white'}`}
+                            >
+                                サマリーを見る
+                                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleNext}
+                                className="py-3 px-6 rounded-full font-bold bg-white text-gray-700 shadow hover:bg-gray-50 hover:shadow-md btn-transition flex items-center"
+                            >
+                                次へ
+                                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
